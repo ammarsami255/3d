@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Antigravity — Transform any real estate photo into an interactive 3D experience. Premium property visualization powered by AI.">
+    <title>Antigravity — Real Estate 3D Intelligence</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r169/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.169.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.169.0/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Background effects -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Header -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <header id="main-header">
+        <div class="header-inner">
+            <div class="logo-group">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <path d="M14 2L2 8v12l12 6 12-6V8L14 2z" stroke="url(#logo-grad)" stroke-width="1.5" fill="none"/>
+                        <path d="M14 8L8 11v6l6 3 6-3v-6l-6-3z" fill="url(#logo-grad)" opacity="0.7"/>
+                        <defs>
+                            <linearGradient id="logo-grad" x1="0" y1="0" x2="28" y2="28">
+                                <stop offset="0%" stop-color="#6366f1"/>
+                                <stop offset="100%" stop-color="#a78bfa"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="logo-text">Antigravity</span>
+                <span class="logo-badge">AI</span>
+            </div>
+            <nav class="header-nav">
+                <span class="nav-status" id="nav-status">
+                    <span class="status-dot idle"></span>
+                    <span class="status-text">Ready</span>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Main Content -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <main id="main-content">
+        
+        <!-- Upload Screen -->
+        <section id="upload-screen" class="screen active">
+            <div class="upload-hero">
+                <div class="hero-badge">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="3" fill="#6366f1"/>
+                        <circle cx="8" cy="8" r="6" stroke="#6366f1" stroke-width="1" opacity="0.5"/>
+                        <circle cx="8" cy="8" r="7.5" stroke="#6366f1" stroke-width="0.5" opacity="0.25"/>
+                    </svg>
+                    Real Estate 3D Intelligence
+                </div>
+                <h1 class="hero-title">
+                    Transform any property photo<br>
+                    into <span class="gradient-text">interactive 3D</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Upload a single image — exterior or interior — and our AI pipeline delivers a fully orbitable, zoomable 3D model in seconds.
+                </p>
+            </div>
+
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-zone-inner">
+                    <div class="upload-icon">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <rect x="4" y="8" width="40" height="32" rx="4" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                            <circle cx="16" cy="20" r="4" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+                            <path d="M4 32l10-8 6 4 12-10 12 8" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+                            <path d="M24 14V28M18 20l6-6 6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <p class="upload-text">
+                        <strong>Drop your property image here</strong><br>
+                        <span class="upload-subtext">or click to browse • JPG, PNG, HEIC</span>
+                    </p>
+                    <input type="file" id="file-input" accept="image/jpeg,image/png,image/heic,image/heif,image/webp" hidden>
+                </div>
+                <div class="upload-preview" id="upload-preview" style="display:none;">
+                    <img id="preview-image" src="" alt="Preview">
+                    <button class="preview-clear" id="preview-clear" title="Remove">×</button>
+                </div>
+            </div>
+
+            <button class="btn-primary" id="btn-process" disabled>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M9 2v14M2 9h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Generate 3D Model
+            </button>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏠</div>
+                    <h3>Exterior & Interior</h3>
+                    <p>Villas, apartments, rooms — automatically classified and processed</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>AI-Powered Depth</h3>
+                    <p>Apple Depth Pro delivers metric depth with sharp boundaries</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Web-Ready 3D</h3>
+                    <p>Interactive GLB model with orbit, zoom, and pan controls</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Processing Screen -->
+        <section id="processing-screen" class="screen">
+            <div class="processing-container">
+                <div class="processing-visual">
+                    <div class="pulse-ring ring-1"></div>
+                    <div class="pulse-ring ring-2"></div>
+                    <div class="pulse-ring ring-3"></div>
+                    <div class="processing-core">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <path d="M20 4L4 12v16l16 8 16-8V12L20 4z" stroke="url(#proc-grad)" stroke-width="1.5" fill="none">
+                                <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="8s" repeatCount="indefinite"/>
+                            </path>
+                            <defs>
+                                <linearGradient id="proc-grad" x1="0" y1="0" x2="40" y2="40">
+                                    <stop offset="0%" stop-color="#6366f1"/>
+                                    <stop offset="100%" stop-color="#a78bfa"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+                <h2 class="processing-title">Processing Your Image</h2>
+                <p class="processing-status" id="processing-status">Initializing AI pipeline...</p>
+                
+                <div class="pipeline-steps">
+                    <div class="pipeline-step" id="step-analyze">
+                        <div class="step-indicator"><span class="step-dot"></span></div>
+                        <span class="step-label">Scene Analysis</span>
+                    </div>
+                    <div class="pipeline-step" id="step-depth">
+                        <div class="step-indicator"><span class="step-dot"></span></div>
+                        <span class="step-label">Depth Estimation</span>
+                    </div>
+                    <div class="pipeline-step" id="step-pointcloud">
+                        <div class="step-indicator"><span class="step-dot"></span></div>
+                        <span class="step-label">Point Cloud</span>
+                    </div>
+                    <div class="pipeline-step" id="step-mesh">
+                        <div class="step-indicator"><span class="step-dot"></span></div>
+                        <span class="step-label">Mesh Reconstruction</span>
+                    </div>
+                    <div class="pipeline-step" id="step-export">
+                        <div class="step-indicator"><span class="step-dot"></span></div>
+                        <span class="step-label">GLB Export</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Viewer Screen -->
+        <section id="viewer-screen" class="screen">
+            <div class="viewer-layout">
+                <!-- 3D Canvas -->
+                <div class="viewer-canvas-wrapper" id="viewer-canvas-wrapper">
+                    <canvas id="three-canvas"></canvas>
+                    <div class="viewer-controls">
+                        <button class="viewer-btn" id="btn-reset-camera" title="Reset Camera">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M3 9a6 6 0 1011.5-2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <path d="M14 2v5h-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <button class="viewer-btn" id="btn-toggle-wireframe" title="Toggle Wireframe">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M9 2l7 4v8l-7 4-7-4V6l7-4z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M9 10V18M2 6l7 4 7-4" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+                            </svg>
+                        </button>
+                        <button class="viewer-btn" id="btn-toggle-autorotate" title="Auto-Rotate">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M9 2a7 7 0 014.95 2.05" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                        <button class="viewer-btn" id="btn-fullscreen" title="Fullscreen">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M2 6V2h4M12 2h4v4M16 12v4h-4M6 16H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="viewer-hint" id="viewer-hint">
+                        <span>🖱️ Orbit</span> • <span>Scroll to Zoom</span> • <span>Right-click to Pan</span>
+                    </div>
+                </div>
+                
+                <!-- Info Panel -->
+                <aside class="info-panel" id="info-panel">
+                    <div class="panel-section">
+                        <h3 class="panel-title">Property Overview</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Scene Type</span>
+                                <span class="info-value" id="info-scene-type">—</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Depth Range</span>
+                                <span class="info-value" id="info-depth-range">—</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Point Count</span>
+                                <span class="info-value" id="info-point-count">—</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Mesh Faces</span>
+                                <span class="info-value" id="info-mesh-faces">—</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Processing Time</span>
+                                <span class="info-value" id="info-proc-time">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <h3 class="panel-title">Depth Map</h3>
+                        <div class="depth-preview" id="depth-preview">
+                            <img id="depth-map-img" src="" alt="Depth map visualization">
+                        </div>
+                    </div>
+                    
+                    <div class="panel-section">
+                        <h3 class="panel-title">Source Image</h3>
+                        <div class="source-preview" id="source-preview">
+                            <img id="source-img" src="" alt="Original property image">
+                        </div>
+                    </div>
+                    
+                    <div class="panel-actions">
+                        <a class="btn-download" id="btn-download-glb" href="#" download>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 2v9M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Download GLB
+                        </a>
+                        <button class="btn-secondary" id="btn-new-image">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            New Image
+                        </button>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
