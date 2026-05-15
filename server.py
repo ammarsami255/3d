@@ -103,15 +103,22 @@ def run_pipeline_async(image_path: str):
         
         logger.info(f"  Scene result: {scene_result.scene_type}")
         
-        # Stage 2: Depth estimation
+        # === STAGE 2: DEPTH ESTIMATION - FAKE DEPTH FOR TESTING ===
         logger.info("=== STAGE 2: DEPTH ESTIMATION ===")
-        with state_lock:
-            pipeline_state["progress"] = "Running depth estimation (stage 2/5)..."
+        print(">>> STAGE 2: Using fake depth for TESTING...", flush=True)
         
-        logger.info(f"  Calling estimate_depth({image_path})...")
-        depth_map, focal_length, rgb = estimate_depth(image_path)
-        logger.info(f"  Depth result: shape {depth_map.shape}")
-        print(f">>> DEPTH ESTIMATED: {depth_map.shape}, focal: {focal_length}", flush=True)
+        # Create fake depth for testing - 3 meters everywhere
+        import numpy as np
+        from PIL import Image
+        
+        img = Image.open(image_path)
+        W, H = img.size
+        depth_map = np.ones((H, W), dtype=np.float32) * 3.0  # 3 meters
+        focal_length = 1536.0
+        rgb = np.array(img)
+        
+        print(f">>> FAKE DEPTH: {depth_map.shape}", flush=True)
+        print(f">>> STAGE 2 COMPLETE", flush=True)
         
         # Save depth visualization
         print(">>> SAVING DEPTH VISUALIZATION...", flush=True)
