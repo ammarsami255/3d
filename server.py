@@ -130,16 +130,19 @@ def run_pipeline_async(image_path: str):
         logger.info("=== STAGE 3: BUILD POINT CLOUD ===")
         
         try:
-            print(f">>> depth_map type: {type(depth_map)}, shape: {depth_map.shape if hasattr(depth_map, 'shape') else 'no shape'}", flush=True)
+            print(f">>> depth_map type: {type(depth_map)}, shape: {depth_map.shape}", flush=True)
+            print(f">>> rgb type: {type(rgb)}, dtype: {rgb.dtype}", flush=True)
             
-            # Downsample and create simple point cloud
+            # depth_pro.load_rgb() returns float32 [0,1]; PIL needs uint8
+            if rgb.dtype != np.uint8:
+                rgb = (np.clip(rgb, 0, 1) * 255).astype(np.uint8)
+            print(f">>> rgb converted to uint8: {rgb.dtype}", flush=True)
+            
+            # Simple numpy downsample instead of PIL
             factor = 4
-            H, W = depth_map.shape[0] // factor, depth_map.shape[1] // factor
-            
-            from PIL import Image
-            depth_small = np.array(Image.fromarray(depth_map.astype(np.float32)).resize((W, H), Image.NEAREST))
-            rgb_small = np.array(Image.fromarray(rgb).resize((W, H), Image.NEAREST))
-            
+            depth_small = depth_map[::factor, ::factor]
+            rgb_small = rgb[::factor, ::factor]
+            H, W = depth_small.shape
             print(f">>> Resized to {W}x{H}", flush=True)
             
             logger.info(f"  Downsampled to {W}x{H}")
@@ -226,6 +229,8 @@ def run_pipeline_async(image_path: str):
         # Stage 5: Export GLB
         logger.info("=== STAGE 5: EXPORT GLB ===")
         
+        glb_path = None  # Initialize for safety
+        
         try:
             import trimesh
             
@@ -249,7 +254,7 @@ def run_pipeline_async(image_path: str):
             logger.error(f"  ERROR Stage 5: {e}")
             import traceback
             logger.error(traceback.format_exc())
-            # Don't raise - try to save anyway
+            glb_path = None
         
         # Fix 6: Normalize paths to relative filenames
         from dataclasses import asdict
@@ -261,7 +266,7 @@ def run_pipeline_async(image_path: str):
             'point_count': point_count,
             'mesh_faces': mesh_faces,
             'processing_time_sec': 0.0,
-            'glb_path': Path(glb_path).name,
+            'glb_path': Path(glb_path).name if glb_path else "model.glb",
             'ply_path': "model.ply",
             'depth_map_path': "depth_map.png",
         }
