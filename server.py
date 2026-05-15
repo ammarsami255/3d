@@ -103,36 +103,27 @@ def run_pipeline_async(image_path: str):
         
         logger.info(f"  Scene result: {scene_result.scene_type}")
         
-        # === STAGE 2: DEPTH ESTIMATION - FAKE DEPTH FOR TESTING ===
+        # === STAGE 2: DEPTH ESTIMATION ===
         logger.info("=== STAGE 2: DEPTH ESTIMATION ===")
-        print(">>> STAGE 2: Using fake depth for TESTING...", flush=True)
         
-        # Create fake depth for testing - gradient for visualization
-        import numpy as np
-        from PIL import Image, ImageOps
+        logger.info(f"  Calling estimate_depth({image_path})...")
+        print(">>> CALLING ESTIMATE_DEPTH...", flush=True)
+        depth_map, focal_length, rgb = estimate_depth(image_path)
+        print(f">>> DEPTH ESTIMATED: {depth_map.shape}", flush=True)
+        logger.info(f"  Depth result: shape {depth_map.shape}")
         
-        img = Image.open(image_path)
-        W, H = img.size
-        
-        # Create a gradient depth (near=1m at top, far=10m at bottom)
-        y_coords = np.linspace(1, 10, H).reshape(H, 1)
-        depth_map = np.tile(y_coords, (1, W)).astype(np.float32)
-        focal_length = 1536.0
-        rgb = np.array(img)
-        
-        print(f">>> FAKE DEPTH: {depth_map.shape}, range: {depth_map.min():.1f}-{depth_map.max():.1f}m", flush=True)
-        
-        # Save depth visualization - convert to colored
-        depth_vis = ImageOps.colorize(
-            Image.fromarray((depth_map * 25).astype(np.uint8)),  # Scale for visibility
-            black=(0, 0, 0),
-            white=(255, 255, 255)
-        )
-        depth_vis_path = OUTPUT_DIR / "depth_map.png"
-        depth_vis.save(depth_vis_path)
-        print(f">>> DEPTH VIS SAVED: {depth_vis_path}", flush=True)
-        
-        print(f">>> STAGE 2 COMPLETE", flush=True)
+        # Save depth visualization
+        print(">>> SAVING DEPTH VISUALIZATION...", flush=True)
+        try:
+            depth_vis_path = save_depth_visualization(depth_map, OUTPUT_DIR)
+            print(f">>> DEPTH VIS SAVED", flush=True)
+        except Exception as e:
+            print(f">>> DEPTH VIS ERROR: {e}", flush=True)
+            # Manual save
+            from PIL import Image
+            import numpy as np
+            vis = ((depth_map / depth_map.max()) * 255).astype(np.uint8)
+            Image.fromarray(vis).save(OUTPUT_DIR / "depth_map.png")
         
         # Stage 3: Build point cloud - Direct numpy (no Open3D)
         print(">>> ENTERING STAGE 3", flush=True)

@@ -215,6 +215,11 @@ def estimate_depth(
         rgb_image: HxW×3 numpy array (for point cloud coloring)
     """
     print(">>>>>> ESTIMATE_DEPTH STARTED <<<<<<", flush=True)
+    import torch
+    # Fix for CUDA hanging  
+    torch.set_num_threads(4)
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
     print(f">>> image_path: {image_path}", flush=True)
     print(f">>> checkpoint: {checkpoint_path}", flush=True)
     
@@ -268,6 +273,8 @@ def estimate_depth(
     try:
         with torch.no_grad():
             prediction = model.infer(image_tensor, f_px=f_px)
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
         print("  >>> model.infer() COMPLETED!", flush=True)
         logger.info("  model.infer() COMPLETED!")
     except Exception as e:
