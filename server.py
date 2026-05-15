@@ -58,46 +58,52 @@ def run_pipeline_async(image_path: str):
     try:
         from antigravity import run_pipeline, analyze_image, estimate_depth
         from antigravity import build_point_cloud, clean_and_reconstruct, export_glb
+        from antigravity import save_depth_visualization
         
-        # Fix 7: Granular progress updates before each stage
+        # Correct stage order for API
+        # Stage 1: Analyze image FIRST
         with state_lock:
             pipeline_state["progress"] = "Analyzing image (stage 1/5)..."
         
-        # Stage 1: Analyze (called separately for progress tracking)
         from pathlib import Path
         image_path_obj = Path(image_path)
+        scene = analyze_image(str(image_path_obj))
         
+        # Stage 2: Depth estimation
         with state_lock:
             pipeline_state["progress"] = "Running depth estimation (stage 2/5)..."
         
-        # Stage 2: Depth estimation
         depth_map, focal_length, rgb = estimate_depth(str(image_path_obj))
         
+        # Save depth visualization
+        depth_vis_path = save_depth_visualization(depth_map, OUTPUT_DIR)
+        
+        # Stage 3: Build point cloud
         with state_lock:
             pipeline_state["progress"] = "Building point cloud (stage 3/5)..."
         
-        # Stage 3: Point cloud
-        scene = analyze_image(str(image_path_obj))
+        logger.info(f"  DEBUG: depth_map shape: {depth_map.shape}, dtype: {depth_map.dtype}")
+        logger.info(f"  DEBUG: rgb shape: {rgb.shape}, focal: {focal_length}")
+        
         pcd = build_point_cloud(depth_map, rgb, focal_length, scene)
         
+        # Stage 4: Clean and reconstruct mesh
         with state_lock:
             pipeline_state["progress"] = "Reconstructing mesh (stage 4/5)..."
         
-        # Stage 4: Clean and reconstruct
         mesh, pcd_clean = clean_and_reconstruct(pcd, scene, OUTPUT_DIR)
         
+        # Stage 5: Export GLB
         with state_lock:
             pipeline_state["progress"] = "Exporting GLB (stage 5/5)..."
         
-        # Stage 5: Export GLB
         glb_path = export_glb(mesh, OUTPUT_DIR)
         
         # Fix 6: Normalize paths to relative filenames
         from dataclasses import asdict
-        result_dict = asdict(scene) if hasattr(scene, '__dict__') else {"scene_type": scene.scene_type}
         
-        # Build the PipelineResult-like dict with relative paths
-        result = type('PipelineResult', (), {
+        # Build the PipelineResult dict with relative paths
+        result_dict = {
             'scene_type': scene.scene_type,
             'depth_range_meters': [round(float(depth_map.min()), 2), round(float(depth_map.max()), 2)],
             'point_count': len(pcd_clean.points),
@@ -106,9 +112,7 @@ def run_pipeline_async(image_path: str):
             'glb_path': Path(glb_path).name,
             'ply_path': "model.ply",
             'depth_map_path': "depth_map.png",
-        })()
-        
-        result_dict = asdict(result)
+        }
         
         with state_lock:
             pipeline_state["result"] = result_dict
@@ -117,6 +121,7 @@ def run_pipeline_async(image_path: str):
         
         logger.info("Pipeline completed successfully.")
     except Exception as e:
+        import traceback
         with state_lock:
             pipeline_state["status"] = "error"
             pipeline_state["error"] = str(e)
