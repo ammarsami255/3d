@@ -55,6 +55,12 @@ def run_pipeline_async(image_path: str):
     """Run the pipeline in a background thread."""
     global pipeline_state
     
+    # IMPORTANT: Set up sys.path BEFORE importing
+    import sys
+    ml_depth_pro_path = str(Path(__file__).parent / "ml-depth-pro" / "src")
+    if ml_depth_pro_path not in sys.path:
+        sys.path.insert(0, ml_depth_pro_path)
+    
     # Fix 5: Wrap state mutations with lock
     with state_lock:
         pipeline_state["status"] = "processing"
@@ -66,6 +72,7 @@ def run_pipeline_async(image_path: str):
         from antigravity import run_pipeline, analyze_image, estimate_depth
         from antigravity import build_point_cloud, clean_and_reconstruct, export_glb
         from antigravity import save_depth_visualization
+        print(">>> IMPORTS DONE", flush=True)
         
         # Stage 1: Analyze image FIRST
         logger.info("=== STAGE 1: ANALYZE IMAGE ===")
@@ -102,7 +109,7 @@ def run_pipeline_async(image_path: str):
             pipeline_state["progress"] = "Running depth estimation (stage 2/5)..."
         
         logger.info(f"  Calling estimate_depth({image_path})...")
-        depth_map, focal_length, rgb = estimate_depth(str(image_path_obj))
+        depth_map, focal_length, rgb = estimate_depth(image_path)
         logger.info(f"  Depth result: shape {depth_map.shape}")
         print(f">>> DEPTH ESTIMATED: {depth_map.shape}, focal: {focal_length}", flush=True)
         
