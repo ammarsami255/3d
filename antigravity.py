@@ -222,7 +222,7 @@ def estimate_depth(
     logger.info(f"  Checkpoint path: {checkpoint_path}")
     logger.info(f"  Checkpoint exists: {Path(checkpoint_path).exists()}")
     
-    device = torch.device("cpu")  # Force CPU for now
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"  Device: {device}")
     
     # Load model
@@ -247,21 +247,25 @@ def estimate_depth(
     model.eval()
     
     # Load image
-    logger.info("  Loading image with depth_pro.load_rgb()...")
+    print("  >>> Loading image with depth_pro.load_rgb()...", flush=True)
     rgb, _, f_px = depth_pro.load_rgb(image_path)
-    logger.info(f"  RGB loaded: {type(rgb)}, f_px: {f_px}")
+    print(f"  >>> RGB loaded: {type(rgb)}, f_px: {f_px}", flush=True)
     
     logger.info("  Applying transform...")
     image_tensor = transform(rgb)
     logger.info(f"  image_tensor shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
     
     # Inference - wrap in try/except to catch exact failure point
-    logger.info("  ABOUT TO CALL model.infer()...")
+    print("  >>> ABOUT TO CALL model.infer()...", flush=True)
+    print(f"  >>> image_tensor shape: {image_tensor.shape}", flush=True)
+    print(f"  >>> f_px: {f_px}", flush=True)
     try:
         with torch.no_grad():
             prediction = model.infer(image_tensor, f_px=f_px)
+        print("  >>> model.infer() COMPLETED!", flush=True)
         logger.info("  model.infer() COMPLETED!")
     except Exception as e:
+        print(f"  >>> FAILED: {e}", flush=True)
         logger.error(f"  FAILED during model.infer(): {e}")
         raise
     
