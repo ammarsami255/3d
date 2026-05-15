@@ -25,21 +25,31 @@ import torch
 import trimesh
 from PIL import Image, ImageStat, ImageFilter
 
-# Add depth_pro to path
-DEPTH_PRO_SRC = Path(__file__).parent / "ml-depth-pro" / "src"
-sys.path.insert(0, str(DEPTH_PRO_SRC))
-
-import depth_pro
-
+# Setup logging FIRST - before any logger calls
 logging.basicConfig(
     level=logging.INFO, 
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler("log.txt", mode="w"),  # Log to file
-        logging.StreamHandler(),  # Also print to console
+        logging.FileHandler("log.txt", mode="w"),
+        logging.StreamHandler()
     ]
 )
+# Force immediate flush for debugging
+for handler in logging.root.handlers:
+    handler.flush()
+
 logger = logging.getLogger("antigravity")
+
+# Add depth_pro to path
+DEPTH_PRO_SRC = Path(__file__).parent / "ml-depth-pro" / "src"
+logger.info(f"  Adding ml-depth-pro path: {DEPTH_PRO_SRC}")
+logger.info(f"  Path exists: {DEPTH_PRO_SRC.exists()}")
+
+sys.path.insert(0, str(DEPTH_PRO_SRC))
+logger.info("  Importing depth_pro...")
+
+import depth_pro
+logger.info(f"  depth_pro imported: {depth_pro}")
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -208,6 +218,9 @@ def estimate_depth(
     
     if checkpoint_path is None:
         checkpoint_path = str(Path(__file__).parent / "checkpoints" / "depth_pro.pt")
+    
+    logger.info(f"  Checkpoint path: {checkpoint_path}")
+    logger.info(f"  Checkpoint exists: {Path(checkpoint_path).exists()}")
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"  Device: {device}")
