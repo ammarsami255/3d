@@ -269,11 +269,16 @@ def estimate_depth(
     model.eval()
     
     # Load image
+    import sys
     print("  >>> Loading image with depth_pro.load_rgb()...", flush=True)
+    sys.stdout.flush()
     rgb, _, f_px = depth_pro.load_rgb(image_path)
     print(f"  >>> RGB loaded: {type(rgb)}, f_px: {f_px}", flush=True)
+    sys.stdout.flush()
     
     logger.info("  Applying transform...")
+    print("  >>> Applying transform...", flush=True)
+    sys.stdout.flush()
     image_tensor = transform(rgb)
     logger.info(f"  image_tensor shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
     
