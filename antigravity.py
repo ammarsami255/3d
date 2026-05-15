@@ -214,6 +214,13 @@ def estimate_depth(
         focal_length_px: estimated focal length in pixels
         rgb_image: HxW×3 numpy array (for point cloud coloring)
     """
+    import os
+    # Disable model printing
+    os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+    
+    import warnings
+    warnings.filterwarnings('ignore')
+    
     print(">>>>>> ESTIMATE_DEPTH STARTED <<<<<<", flush=True)
     import torch
     # Fix for CUDA hanging  
@@ -253,7 +260,11 @@ def estimate_depth(
         device=device,
         precision=torch.float16 if device.type == "cuda" else torch.float32,
     )
+    # Force clear print buffer
+    import sys
+    sys.stdout.flush()
     print("  >>> MODEL READY!", flush=True)
+    sys.stdout.flush()
     logger.info("  Model loaded successfully!")
     model.eval()
     
