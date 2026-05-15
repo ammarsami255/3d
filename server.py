@@ -104,21 +104,29 @@ def run_pipeline_async(image_path: str):
         logger.info(f"  Calling estimate_depth({image_path})...")
         depth_map, focal_length, rgb = estimate_depth(str(image_path_obj))
         logger.info(f"  Depth result: shape {depth_map.shape}")
+        print(f">>> DEPTH ESTIMATED: {depth_map.shape}, focal: {focal_length}", flush=True)
         
         # Save depth visualization
+        print(">>> SAVING DEPTH VISUALIZATION...", flush=True)
         depth_vis_path = save_depth_visualization(depth_map, OUTPUT_DIR)
+        print(">>> DEPTH VIS SAVED", flush=True)
         
         # Stage 3: Build point cloud - Direct numpy (no Open3D)
+        print(">>> ENTERING STAGE 3", flush=True)
         logger.info("=== STAGE 3: BUILD POINT CLOUD ===")
         
         try:
+            print(f">>> depth_map type: {type(depth_map)}, shape: {depth_map.shape if hasattr(depth_map, 'shape') else 'no shape'}", flush=True)
+            
             # Downsample and create simple point cloud
             factor = 4
             H, W = depth_map.shape[0] // factor, depth_map.shape[1] // factor
             
             from PIL import Image
-            depth_small = np.array(Image.fromarray(depth_map).resize((W, H), Image.NEAREST))
+            depth_small = np.array(Image.fromarray(depth_map.astype(np.float32)).resize((W, H), Image.NEAREST))
             rgb_small = np.array(Image.fromarray(rgb).resize((W, H), Image.NEAREST))
+            
+            print(f">>> Resized to {W}x{H}", flush=True)
             
             logger.info(f"  Downsampled to {W}x{H}")
             
