@@ -214,6 +214,10 @@ def estimate_depth(
         focal_length_px: estimated focal length in pixels
         rgb_image: HxW×3 numpy array (for point cloud coloring)
     """
+    print(">>>>>> ESTIMATE_DEPTH STARTED <<<<<<", flush=True)
+    print(f">>> image_path: {image_path}", flush=True)
+    print(f">>> checkpoint: {checkpoint_path}", flush=True)
+    
     logger.info("Stage 2: Running Depth Pro inference...")
     
     if checkpoint_path is None:
@@ -238,11 +242,13 @@ def estimate_depth(
     logger.info("  Config created, now loading model...")
     
     logger.info("  Calling create_model_and_transforms()...")
+    print("  >>> Creating model NOW...", flush=True)
     model, transform = depth_pro.create_model_and_transforms(
         config=config,
         device=device,
         precision=torch.float16 if device.type == "cuda" else torch.float32,
     )
+    print("  >>> MODEL READY!", flush=True)
     logger.info("  Model loaded successfully!")
     model.eval()
     
@@ -302,6 +308,7 @@ def estimate_depth(
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     
+    print(f">>>>>> DEPTH ESTIMATE DONE: {depth.shape}, focal: {focal} <<<<<<", flush=True)
     return depth, focal, rgb
 
 
