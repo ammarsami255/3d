@@ -67,43 +67,51 @@ def run_pipeline_async(image_path: str):
         from antigravity import build_point_cloud, clean_and_reconstruct, export_glb
         from antigravity import save_depth_visualization
         
-        # Correct stage order for API
         # Stage 1: Analyze image FIRST
+        logger.info("=== STAGE 1: ANALYZE IMAGE ===")
         with state_lock:
             pipeline_state["progress"] = "Analyzing image (stage 1/5)..."
         
         from pathlib import Path
         image_path_obj = Path(image_path)
+        logger.info(f"  Calling analyze_image({image_path})...")
         scene = analyze_image(str(image_path_obj))
+        logger.info(f"  Scene result: {scene.scene_type}")
         
         # Stage 2: Depth estimation
+        logger.info("=== STAGE 2: DEPTH ESTIMATION ===")
         with state_lock:
             pipeline_state["progress"] = "Running depth estimation (stage 2/5)..."
         
+        logger.info(f"  Calling estimate_depth({image_path})...")
         depth_map, focal_length, rgb = estimate_depth(str(image_path_obj))
+        logger.info(f"  Depth result: shape {depth_map.shape}")
         
         # Save depth visualization
         depth_vis_path = save_depth_visualization(depth_map, OUTPUT_DIR)
         
         # Stage 3: Build point cloud
+        logger.info("=== STAGE 3: BUILD POINT CLOUD ===")
         with state_lock:
             pipeline_state["progress"] = "Building point cloud (stage 3/5)..."
         
-        logger.info(f"  DEBUG: depth_map shape: {depth_map.shape}, dtype: {depth_map.dtype}")
-        logger.info(f"  DEBUG: rgb shape: {rgb.shape}, focal: {focal_length}")
-        
+        logger.info(f"  Calling build_point_cloud()...")
         pcd = build_point_cloud(depth_map, rgb, focal_length, scene)
         
         # Stage 4: Clean and reconstruct mesh
+        logger.info("=== STAGE 4: CLEAN & RECONSTRUCT ===")
         with state_lock:
             pipeline_state["progress"] = "Reconstructing mesh (stage 4/5)..."
         
+        logger.info(f"  Calling clean_and_reconstruct()...")
         mesh, pcd_clean = clean_and_reconstruct(pcd, scene, OUTPUT_DIR)
         
         # Stage 5: Export GLB
+        logger.info("=== STAGE 5: EXPORT GLB ===")
         with state_lock:
             pipeline_state["progress"] = "Exporting GLB (stage 5/5)..."
         
+        logger.info(f"  Calling export_glb()...")
         glb_path = export_glb(mesh, OUTPUT_DIR)
         
         # Fix 6: Normalize paths to relative filenames

@@ -226,6 +226,7 @@ def estimate_depth(
     logger.info(f"  Device: {device}")
     
     # Load model
+    logger.info("  Creating DepthProConfig...")
     config = depth_pro.depth_pro.DepthProConfig(
         patch_encoder_preset="dinov2l16_384",
         image_encoder_preset="dinov2l16_384",
@@ -234,12 +235,15 @@ def estimate_depth(
         use_fov_head=True,
         fov_encoder_preset="dinov2l16_384",
     )
+    logger.info("  Config created, now loading model...")
     
+    logger.info("  Calling create_model_and_transforms()...")
     model, transform = depth_pro.create_model_and_transforms(
         config=config,
         device=device,
         precision=torch.float16 if device.type == "cuda" else torch.float32,
     )
+    logger.info(f"  Model loaded! type: {type(model)}")
     model.eval()
     
     # Load image
