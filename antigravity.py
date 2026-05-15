@@ -31,7 +31,14 @@ sys.path.insert(0, str(DEPTH_PRO_SRC))
 
 import depth_pro
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("log.txt", mode="w"),  # Log to file
+        logging.StreamHandler(),  # Also print to console
+    ]
+)
 logger = logging.getLogger("antigravity")
 
 
@@ -223,13 +230,23 @@ def estimate_depth(
     model.eval()
     
     # Load image
+    logger.info("  Loading image with depth_pro.load_rgb()...")
     rgb, _, f_px = depth_pro.load_rgb(image_path)
-    image_tensor = transform(rgb)
+    logger.info(f"  RGB loaded: {type(rgb)}, f_px: {f_px}")
     
-    # Inference
-    logger.info("  Running model.infer()...")
-    with torch.no_grad():
-        prediction = model.infer(image_tensor, f_px=f_px)
+    logger.info("  Applying transform...")
+    image_tensor = transform(rgb)
+    logger.info(f"  image_tensor shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
+    
+    # Inference - wrap in try/except to catch exact failure point
+    logger.info("  ABOUT TO CALL model.infer()...")
+    try:
+        with torch.no_grad():
+            prediction = model.infer(image_tensor, f_px=f_px)
+        logger.info("  model.infer() COMPLETED!")
+    except Exception as e:
+        logger.error(f"  FAILED during model.infer(): {e}")
+        raise
     
     logger.info("  Extracting depth and focal from prediction...")
     logger.info(f"  Prediction keys: {list(prediction.keys())}")

@@ -22,7 +22,14 @@ import urllib.parse
 from pathlib import Path
 from io import BytesIO
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("server_log.txt", mode="w"),  # Log to file
+        logging.StreamHandler(),  # Also print to console
+    ]
+)
 logger = logging.getLogger("antigravity-server")
 
 PROJECT_DIR = Path(__file__).parent
