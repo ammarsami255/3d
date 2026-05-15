@@ -230,8 +230,14 @@ def estimate_depth(
     with torch.no_grad():
         prediction = model.infer(image_tensor, f_px=f_px)
     
-    depth = prediction["depth"].cpu().numpy()
-    focal = prediction["focallength_px"].cpu().item()
+    # Fix 2: Force 2D depth shape
+    depth = prediction["depth"].squeeze().cpu().numpy()
+    if depth.ndim != 2:
+        raise ValueError(f"Unexpected depth shape: {depth.shape}")
+    
+    # Fix 3: Safe focal length key access
+    focal_key = "focallength_px" if "focallength_px" in prediction else "f_px"
+    focal = prediction[focal_key].cpu().item()
     
     logger.info(f"  Depth range: {depth.min():.2f}m - {depth.max():.2f}m")
     logger.info(f"  Focal length: {focal:.1f}px")
@@ -239,7 +245,9 @@ def estimate_depth(
     
     # Free GPU memory
     del model, image_tensor, prediction
-    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    # Fix 1: Convert expression to statement
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     
     return depth, focal, rgb
 
@@ -383,12 +391,15 @@ def clean_and_reconstruct(
     
     # Transfer colors from point cloud to mesh vertices
     if not mesh.has_vertex_colors():
-        # Use the cleaned point cloud's colors via nearest-neighbor transfer
-        mesh_tree = o3d.geometry.KDTreeFlann(pcd_clean)
-        mesh_colors = np.zeros((len(mesh.vertices), 3))
-        for i, vert in enumerate(np.asarray(mesh.vertices)):
-            _, idx, _ = mesh_tree.search_knn_vector_3d(vert, 1)
-            mesh_colors[i] = np.asarray(pcd_clean.colors)[idx[0]]
+        # Fix 8: Vectorized KNN color transfer using scipy cKDTree
+        import scipy.spatial
+        pcd_points = np.asarray(pcd_clean.points)
+        pcd_colors = np.asarray(pcd_clean.colors)
+        mesh_verts = np.asarray(mesh.vertices)
+        
+        tree = scipy.spatial.cKDTree(pcd_points)
+        _, indices = tree.query(mesh_verts, k=1)
+        mesh_colors = pcd_colors[indices]
         mesh.vertex_colors = o3d.utility.Vector3dVector(mesh_colors)
     
     # Save PLY
@@ -426,11 +437,12 @@ def export_glb(
         colors_rgba = np.full((len(vertices), 4), [180, 180, 180, 255], dtype=np.uint8)
     
     # Create trimesh
+    # Fix 4: process=False to preserve vertex color mapping
     tri_mesh = trimesh.Trimesh(
         vertices=vertices,
         faces=faces,
         vertex_colors=colors_rgba,
-        process=True,
+        process=False,
     )
     
     # Center and normalize scale for web viewing
@@ -528,9 +540,10 @@ def run_pipeline(image_path: str, output_dir: str = None) -> PipelineResult:
         point_count=len(pcd_clean.points),
         mesh_faces=len(mesh.triangles),
         processing_time_sec=round(elapsed, 1),
-        glb_path=glb_path,
-        ply_path=str(output_dir / "model.ply"),
-        depth_map_path=depth_path,
+        # Fix 6: Use relative filenames only (not absolute paths)
+        glb_path=Path(glb_path).name,
+        ply_path="model.ply",
+        depth_map_path="depth_map.png",
     )
     
     # Save JSON summary
