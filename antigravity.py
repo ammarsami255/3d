@@ -238,7 +238,7 @@ def estimate_depth(
     logger.info(f"  Checkpoint path: {checkpoint_path}")
     logger.info(f"  Checkpoint exists: {Path(checkpoint_path).exists()}")
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")  # FORCE CPU for stability - CUDA hangs with this model
     logger.info(f"  Device: {device}")
     
     # Load model
