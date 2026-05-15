@@ -227,17 +227,32 @@ def estimate_depth(
     image_tensor = transform(rgb)
     
     # Inference
+    logger.info("  Running model.infer()...")
     with torch.no_grad():
         prediction = model.infer(image_tensor, f_px=f_px)
     
-    # Fix 2: Force 2D depth shape
-    depth = prediction["depth"].squeeze().cpu().numpy()
-    if depth.ndim != 2:
-        raise ValueError(f"Unexpected depth shape: {depth.shape}")
+    logger.info("  Extracting depth and focal from prediction...")
+    logger.info(f"  Prediction keys: {list(prediction.keys())}")
     
-    # Fix 3: Safe focal length key access
-    focal_key = "focallength_px" if "focallength_px" in prediction else "f_px"
-    focal = prediction[focal_key].cpu().item()
+    # Fix 2: Force 2D depth shape with defensive handling
+    depth = prediction["depth"]
+    if hasattr(depth, 'squeeze'):
+        depth = depth.squeeze()
+    depth = depth.cpu().numpy()
+    if depth.ndim != 2:
+        logger.warning(f"  WARNING: Unexpected depth shape {depth.shape}, squeezing...")
+        depth = np.squeeze(depth)
+        if depth.ndim != 2:
+            raise ValueError(f"Unexpected depth shape: {depth.shape}")
+    
+    # Fix 3: Safe focal length key access with fallback
+    if "focallength_px" in prediction:
+        focal = prediction["focallength_px"].cpu().item()
+    elif "f_px" in prediction:
+        focal = prediction["f_px"].cpu().item()
+    else:
+        logger.warning("  WARNING: No focal key found, using default 1.0")
+        focal = 1.0
     
     logger.info(f"  Depth range: {depth.min():.2f}m - {depth.max():.2f}m")
     logger.info(f"  Focal length: {focal:.1f}px")
