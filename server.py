@@ -95,16 +95,26 @@ def run_pipeline_async(image_path: str):
         with state_lock:
             pipeline_state["progress"] = "Building point cloud (stage 3/5)..."
         
-        logger.info(f"  Calling build_point_cloud()...")
-        pcd = build_point_cloud(depth_map, rgb, focal_length, scene)
+        try:
+            logger.info(f"  Calling build_point_cloud() with depth_map shape {depth_map.shape}...")
+            pcd = build_point_cloud(depth_map, rgb, focal_length, scene)
+            logger.info(f"  Point cloud created: {len(pcd.points)} points")
+        except Exception as e:
+            logger.error(f"  ERROR in build_point_cloud: {e}")
+            raise
         
         # Stage 4: Clean and reconstruct mesh
         logger.info("=== STAGE 4: CLEAN & RECONSTRUCT ===")
         with state_lock:
             pipeline_state["progress"] = "Reconstructing mesh (stage 4/5)..."
         
-        logger.info(f"  Calling clean_and_reconstruct()...")
-        mesh, pcd_clean = clean_and_reconstruct(pcd, scene, OUTPUT_DIR)
+        try:
+            logger.info(f"  Calling clean_and_reconstruct()...")
+            mesh, pcd_clean = clean_and_reconstruct(pcd, scene, OUTPUT_DIR)
+            logger.info(f"  Mesh created: {len(mesh.vertices)} vertices, {len(mesh.triangles)} faces")
+        except Exception as e:
+            logger.error(f"  ERROR in clean_and_reconstruct: {e}")
+            raise
         
         # Stage 5: Export GLB
         logger.info("=== STAGE 5: EXPORT GLB ===")

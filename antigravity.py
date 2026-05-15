@@ -243,7 +243,7 @@ def estimate_depth(
         device=device,
         precision=torch.float16 if device.type == "cuda" else torch.float32,
     )
-    logger.info(f"  Model loaded! type: {type(model)}")
+    logger.info("  Model loaded successfully!")
     model.eval()
     
     # Load image
